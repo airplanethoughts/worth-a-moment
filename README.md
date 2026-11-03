@@ -70,3 +70,10 @@ The income calculator now combines normalized log-income growth, time savings, s
 
 ### Remembered scoring priorities
 Save or clear priorities independently for everyday, purchase, relationship and income comparisons. Only weights, major-change anchors and hard limits are stored under `worth-scoring-priorities-v1`; outcome ratings are excluded. Examples preserve existing chosen priorities. General decisions refresh after input edits; income edits replace stale results with a recalculation prompt. Browser QA verified save/reload, example preservation, cost updates and stale-result handling.
+
+### Guided comparisons and portable decisions
+The main comparison is organized into four steps: choices, resources, benefits, then priorities. Validation opens the step and detail section containing a missing input. Examples still populate complete comparisons; zero-weight criteria do not require ratings. The combined personal score leads the result, with separate forecast indices and the raw table behind a detail control.
+
+The journal can download and restore versioned JSON decision backups. Restore validates size, record identifiers, dates and reflection text, rejects unsafe object keys, adds new IDs, and preserves existing IDs. Scoring preferences and learned-model observations are deliberately excluded. Run `node test-backups.cjs` for import validation and non-overwriting merge checks.
+
+After changing browser scripts, run `node scripts/stamp-assets.cjs` so the HTML references their current content hashes. This avoids cached code surviving a release. Live edits synchronize the score, comparison text, resource table and new-save state; old saved snapshots keep their values.
