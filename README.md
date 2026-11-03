@@ -77,3 +77,11 @@ The main comparison is organized into four steps: choices, resources, benefits, 
 The journal can download and restore versioned JSON decision backups. Restore validates size, record identifiers, dates and reflection text, rejects unsafe object keys, adds new IDs, and preserves existing IDs. Scoring preferences and learned-model observations are deliberately excluded. Run `node test-backups.cjs` for import validation and non-overwriting merge checks.
 
 After changing browser scripts, run `node scripts/stamp-assets.cjs` so the HTML references their current content hashes. This avoids cached code surviving a release. Live edits synchronize the score, comparison text, resource table and new-save state; old saved snapshots keep their values.
+
+## Personalized scores across decision types
+
+Everyday tasks (including class, work and rest), purchases, relationships, and income changes share `dist/tradeoff-core.js` for capped weighted contributions, the 50-centered score, sensitivity scenarios and verdict rules. Everyday decisions can include health, flexibility and another personal factor alongside resources, feelings, connection, meaning and security. Only selected factors need ratings; unknown factors can have zero importance. Income retains its log-income transformation and weekly effort units before entering that shared arithmetic.
+
+Hard limits apply to both options, even when the related resource has zero score weight. If both options exceed a limit, the app recommends revising the plan. A relationship refusal overrides the score, and the optional relationship spending comfort limit is enforced. Numerical preference scores remain visible for transparency; they never overrule these boundaries. The optional smaller third option is explicitly outside this combined score; enter it as a main option to score it fully.
+
+Invalid or incomplete edits disable saving until a new valid personalized comparison is available. Saved reflections retain their original criteria, score and scale. Cross-decision scores are not comparable when criteria or weights differ.
