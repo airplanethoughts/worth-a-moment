@@ -1,0 +1,18 @@
+name: Verify WAM
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  calculations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node test-model.cjs
+      - run: node test-income.cjs
+      - run: node test-decisions.cjs
+      - run: node test-backups.cjs
+      - run: node scripts/stamp-assets.cjs
+      - run: git diff --exit-code -- dist/index.html
