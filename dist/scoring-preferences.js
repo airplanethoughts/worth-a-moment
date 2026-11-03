@@ -16,7 +16,13 @@ reset.onclick=()=>{clear(ids);delete profiles[key()];if(label==='decision')delet
 controls(el('decisionScoreSettings'),'decision',()=>type,decisionIds);
 const incomeDetails=el('scoreWeight_income').closest('details');controls(incomeDetails,'income',()=>'income',incomeIds);
 apply(decisionIds,profiles[type]);apply(incomeIds,profiles.income);
-let timer;function refresh(){clearTimeout(timer);timer=setTimeout(()=>{if(current&&el('form').checkValidity()){addPerspective();renderNumbers();}else if(current){const result=el('decisionScoreResult');if(result)result.textContent='Update the missing or invalid decision inputs and calculate again.';}},80);}
+let timer;function refresh(){clearTimeout(timer);timer=setTimeout(()=>{if(current&&el('form').checkValidity()){
+for(const id of ['task','alt','minutes','money','energy','capacity','gain','skip','repeat'])current[id]=el(id).value.trim();
+put('doTitle',current.task);put('altTitle',current.alt);put('doGain',current.gain);put('skipText',current.skip);
+const frequency=current.repeat==='daily'?7:1;
+put('recurrence',current.repeat==='once'?'This is one decision for today. It does not have to become a rule for every day.':`At this pace, that's about ${Number((Number(current.minutes)*frequency/60).toFixed(1))} hours and $${(Number(current.money||0)*frequency).toFixed(2)} each week. Is that a rhythm you want to keep?`);
+addPerspective();renderNumbers();el('save').disabled=false;put('saveMessage','This comparison has unsaved changes. Save a reflection to keep this version.');
+}else if(current){const result=el('decisionScoreResult');if(result)result.textContent='Update the missing or invalid decision inputs and calculate again.';}},80);}
 el('form').addEventListener('input',refresh);
 el('decisionType').addEventListener('change',()=>{draft[type]=capture(decisionIds);type=el('decisionType').value;clear(decisionIds);apply(decisionIds,draft[type]||profiles[type]);status('decisionPreferenceStatus','Using priorities for '+el('decisionType').selectedOptions[0].textContent+'. Save to remember changes.');refresh();});
 for(const [id,target] of [['example','everyday'],['purchaseExample','purchase'],['relationshipExample','relationship']]){
