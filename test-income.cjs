@@ -19,3 +19,12 @@ assert.equal(scoreTradeoff(x,{...onlyIncome,maxTime:45}).limits.length,1);
 assert.throws(()=>scoreTradeoff(x,{factors:{}}));assert.throws(()=>scoreTradeoff(x,{factors:{income:{weight:2,swing:0}}}));assert.throws(()=>scoreTradeoff(x,{factors:{security:{weight:1,a:NaN,b:5}}}));
 assert.equal(scoreTradeoff(x,{factors:{income:{weight:2,swing:20},time:{weight:2,swing:8}}}).score,scoreTradeoff(x,{factors:{income:{weight:4,swing:20},time:{weight:4,swing:8}}}).score);
 console.log('Personal score checks passed: priority changes, caps, neutrality, contributions, sensitivity, hard limits, invalid inputs and weight normalization.');
+const currentTooCostly=scoreTradeoff({...x,hoursA:60,hoursB:40,recoveryA:3,recoveryB:3},{...onlyIncome,maxTime:50});
+assert.deepEqual(currentTooCostly.alternativeLimits,['total weekly time']);assert.match(currentTooCostly.verdict,/Current option exceeds/);
+assert.match(scoreTradeoff(x,{...onlyIncome,maxTime:30}).verdict,/Both options exceed/);
+// Equivalent normalized benefit/resource comparisons produce identical scores across calculators.
+const {decisionScore}=require('./dist/decision-score.js');
+const everyday=decisionScore({factors:{time:{weight:3,a:60,b:90,swing:60},health:{weight:2,a:8,b:4}}});
+const annual=scoreTradeoff({...x,hoursA:1.5,hoursB:1,recoveryA:0,recoveryB:0},{factors:{time:{weight:3,swing:1},health:{weight:2,a:4,b:8}}});
+assert.equal(everyday.score,annual.score);
+console.log('Shared-engine checks passed: current/both-option limits and equivalent normalized scores across income and everyday decisions.');
