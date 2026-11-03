@@ -41,3 +41,19 @@ Definitions, saved decisions, and follow-ups use browser localStorage. They do n
 - `dist/personal.js`: personal scales, priorities, and actual-outcome follow-ups.
 
 The `.openai/hosting.json` file in the Sites checkout identifies the existing private deployment. It is not required for local use. A GitHub copy by itself does not enable automatic deployment or publish a GitHub Pages site.
+
+## Experimental learned estimates
+
+The Learning section implements the decayed reward equation from Rutledge et al. (2014), DOI: 10.1073/pnas.1407535111, adapted to self-rated everyday rewards. This is not a validated everyday-life implementation of the original reward-task findings.
+
+Record expected reward before an event, then actual reward and current happiness afterward. For certain events, the known reward is fixed from the prior entry. For uncertain events, reward prediction error equals actual minus expected reward. Each scale definition and its three anchors has a separate observation history; logs remain in localStorage under `worth-learning-v1`.
+
+The engine fits intercept + discounted CR, EV, and RPE features using ridge regression (penalty 1, no intercept penalty). It chooses a decay factor from `[0, .25, .5, .75, .9]` via forward validation within the oldest 70% of records. It evaluates against the newest 30%, using a fixed training-average baseline. The final coefficients are then refit to all matching observations. Predictions are withheld unless the model beats that baseline, has at least 24 records, and has seen the proposed event type. The minimum is a product heuristic, not a statistically sufficient sample size. At most 200 recent matching-scale records are used. Predictions are bounded to 0–10; clipping and reward extrapolation are disclosed.
+
+The model estimates the next event's immediate reported happiness under specified reward outcomes. It does not predict long-term satisfaction, estimate causal treatment effects, or infer rejection probabilities. Mean absolute test error is shown, not a confidence interval. Gamma decays per event, so observations should be recorded promptly in event order. Context and elapsed time are not modeled. Synthetic demonstration data is isolated and never added to the user's observations.
+
+- `dist/momentary-model.js`: pure computation engine, also loadable in Node.
+- `dist/learning.js`: expectation/outcome logging, evidence, and scenario UI.
+- `test-model.cjs`: checks for event coding, decay, cold start, baseline gating, chronological holdout isolation, and output bounds.
+
+Run the model checks with `node test-model.cjs`.
