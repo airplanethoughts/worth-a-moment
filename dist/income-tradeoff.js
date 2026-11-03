@@ -1,4 +1,5 @@
 (function(root){
+const core=typeof module==='object'&&module.exports?require('./tradeoff-core.js'):root.TradeoffCore;
 function calculate(x){
  const keys=['incomeA','incomeB','hoursA','hoursB','recoveryA','recoveryB','effortA','effortB','weeks'];
  if(keys.some(k=>!Number.isFinite(x[k]))||x.incomeA<=0||x.incomeB<=0||x.weeks<1||x.weeks>52||['hoursA','hoursB','recoveryA','recoveryB'].some(k=>x[k]<0)||['effortA','effortB'].some(k=>x[k]<0||x[k]>10)||x.hoursA+x.recoveryA>168||x.hoursB+x.recoveryB>168)throw Error('Enter positive incomes, 1–52 weeks, effort ratings from 0–10, and schedules totaling no more than 168 hours per week.');
@@ -9,7 +10,7 @@ function calculate(x){
 }
 const factorNames={income:'Income',time:'Free time',energy:'Energy',security:'Financial security / benefits',flexibility:'Flexibility / control',meaning:'Meaning / growth',connection:'Relationships',health:'Health / sustainable stress',other:'Your additional factor'};
 function scoreTradeoff(x,p){
- const r=calculate(x),parts=[];let weightTotal=0;
+ const r=calculate(x),parts=[];
  for(const [key,label] of Object.entries(factorNames)){
  const f=p.factors[key]||{weight:0},w=f.weight;
  if(!Number.isFinite(w)||w<0||w>5)throw Error(label+': importance must be between 0 and 5.');
@@ -19,15 +20,11 @@ function scoreTradeoff(x,p){
  if(!Number.isFinite(f.swing)||f.swing<=0)throw Error(label+': enter a positive major-change amount.');
  delta=key==='income'?Math.log(x.incomeB/x.incomeA)/Math.log1p(f.swing/100):key==='time'?-r.extra/f.swing:(r.loadA-r.loadB)/f.swing;
  }else{if(!Number.isFinite(f.a)||!Number.isFinite(f.b)||f.a<0||f.a>10||f.b<0||f.b>10)throw Error(label+': rate both options from 0 to 10, or set importance to 0.');delta=(f.b-f.a)/10;}
- parts.push({key,label,weight:w,delta:Math.max(-1,Math.min(1,delta)),capped:Math.abs(delta)>1});weightTotal+=w;
+ parts.push({key,label,weight:w,delta});
  }
- if(!weightTotal)throw Error('Choose at least one priority above 0 to calculate your personalized score.');
- parts.forEach(f=>f.points=50*f.weight*f.delta/weightTotal);
- const score=50+parts.reduce((sum,f)=>sum+f.points,0),limits=[];
- for(const [key,value,label] of [['maxTime',r.timeB,'total weekly time'],['maxLoad',r.loadB,'weekly effort load']]){if(p[key]!==null&&p[key]!==undefined){if(!Number.isFinite(p[key])||p[key]<0||p[key]>168)throw Error('Hard limits must be between 0 and 168.');if(value>p[key])limits.push(label);}}
- // Stress each included factor by 0.1 normalized units: a scenario check, not a confidence interval.
- const low=50+parts.reduce((sum,f)=>sum+50*f.weight*Math.max(-1,f.delta-.1)/weightTotal,0),high=50+parts.reduce((sum,f)=>sum+50*f.weight*Math.min(1,f.delta+.1)/weightTotal,0);
- return {score,parts,limits,low,high,verdict:limits.length?'Higher income exceeds your hard limit':score>55?'Higher income looks worth it for your priorities':score<45?'Keeping the current option looks better for your priorities':'Close call — neither option clearly wins'};
+ const result=core.weightedTradeoff(parts),limits=[],alternativeLimits=[];
+ for(const [key,value,label] of [['maxTime',r.timeB,'total weekly time'],['maxLoad',r.loadB,'weekly effort load']]){if(p[key]!==null&&p[key]!==undefined){if(!Number.isFinite(p[key])||p[key]<0||p[key]>168)throw Error('Hard limits must be between 0 and 168.');if(value>p[key])limits.push(label);if((key==='maxTime'?r.timeA:r.loadA)>p[key])alternativeLimits.push(label);}}
+ return {...result,limits,alternativeLimits,verdict:core.constrainedVerdict(result,{preferred:limits,alternative:alternativeLimits,preferredName:'New option',alternativeName:'Current option'})};
 }
 if(typeof module==='object'&&module.exports)module.exports={calculate,scoreTradeoff};
 if(!root.document)return;
@@ -39,7 +36,7 @@ for(const key of Object.keys(factorNames)){const read=id=>{const v=el(id).value;
 for(const [k,id] of [['maxTime','scoreMaxTime'],['maxLoad','scoreMaxLoad']])profile[k]=el(id).value===''?null:Number(el(id).value);
 try{const score=scoreTradeoff(x,profile);const heading=document.createElement('h3');heading.textContent=`${n(score.score)}/100 · ${score.verdict}`;out.append(heading);
 line('How to read it:', '50 means an even tradeoff; higher favors option B. This is a personal decision score, not predicted happiness or a probability.');
-if(score.limits.length)line('Hard limit override:', 'Option B exceeds your '+score.limits.join(' and ')+'. The numerical score does not override this boundary.');
+if(score.limits.length)line('Option B hard limits:', 'Exceeds your '+score.limits.join(' and ')+'.');if(score.alternativeLimits.length)line('Current option hard limits:', 'Exceeds your '+score.alternativeLimits.join(' and ')+'.');if(score.limits.length||score.alternativeLimits.length)line('Hard limit override:', 'The preference score does not override your limits. Revise any option that exceeds them.');
 for(const f of score.parts)line(f.label+':',`${signed(f.points)} score points · importance ${f.weight}/5${f.capped?' · major-change cap reached':''}.`);
 line('Assumption check:',`${n(score.low)}–${n(score.high)}/100 when all included factor comparisons move 0.1 normalized units in either direction. This is a sensitivity scenario, not statistical uncertainty.${score.low<=55&&score.high>=45?' Small assumption changes can affect the verdict.':''}`);
 }catch(e){line('Personal score needs your input:',e.message)}
