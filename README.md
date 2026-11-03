@@ -57,3 +57,16 @@ The model estimates the next event's immediate reported happiness under specifie
 - `test-model.cjs`: checks for event coding, decay, cold start, baseline gating, chronological holdout isolation, and output bounds.
 
 Run the model checks with `node test-model.cjs`.
+
+
+### Income versus time calculator
+`dist/income-tradeoff.js` compares household gross income using 100 × ln(B/A), alongside annual additional work/commute/recovery time and self-rated effort load. The income index borrows the log-income functional form from Killingsworth (2021), without fitting or claiming a happiness coefficient. Optional personal willingness to trade hours for a 20% raise determines a local break-even income; this exchange rate is user supplied. No universal satiation cutoff or biological energy estimate is imposed. Tests: `node test-income.cjs`.
+
+### Personalized combined score
+The income calculator now combines normalized log-income growth, time savings, self-rated effort-load reductions, and optional 0–10 ratings for financial security, flexibility, meaning, relationships, sustainable stress and an additional factor. Users explicitly choose importance weights and major-change anchors. The weighted score is centered at 50; 45–55 is a product-defined close-call band. Individual factors are capped. Optional time/effort hard limits override the score. A deterministic sensitivity scenario perturbs normalized factor changes by ±0.1; it is not a confidence interval. Financial-security ratings can include taxes, benefits and extra costs that gross income excludes. The composite is a preference model, not an empirically validated happiness forecast. Tests include normalization, contribution arithmetic, priority reversal and hard limits.
+
+### Scores for everyday, purchase and relationship decisions
+`dist/decision-score.js` applies the same 50-centered weighted comparison to money kept, time including recovery, subjective effort, expected feelings now/later, connection, meaning and security. Users select importance and resource-change anchors; optional benefit factors reuse the existing personal-fit ratings. Costs use linear savings relative to a personal anchor, not the population income curve (which is not evidence about individual purchase utility). Hard limits and an explicitly declined relationship override the numerical preference. Inputs and results are attached to the decision snapshot and reflection summary. Smaller third options remain separate. `node test-decisions.cjs` verifies direction, contributions, missing data, limits and boundaries.
+
+### Remembered scoring priorities
+Save or clear priorities independently for everyday, purchase, relationship and income comparisons. Only weights, major-change anchors and hard limits are stored under `worth-scoring-priorities-v1`; outcome ratings are excluded. Examples preserve existing chosen priorities. General decisions refresh after input edits; income edits replace stale results with a recalculation prompt. Browser QA verified save/reload, example preservation, cost updates and stale-result handling.
