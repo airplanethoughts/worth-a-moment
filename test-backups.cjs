@@ -1,0 +1,6 @@
+const assert=require('node:assert/strict');const {validateBackup,mergeReflections}=require('./dist/decision-backups.js');
+const record={id:'one',date:'2026-11-03T00:00:00Z',task:'Go to class',alt:'Watch recording',profileSummary:'Original score: 60',decisionTradeoff:{result:{score:60}}};
+const backup={app:'worth-a-moment',version:1,reflections:[record]};assert.deepEqual(validateBackup(JSON.stringify(backup)),[record]);
+assert.throws(()=>validateBackup('{'));assert.throws(()=>validateBackup({...backup,version:2}));assert.throws(()=>validateBackup({...backup,reflections:[record,record]}));assert.throws(()=>validateBackup({...backup,reflections:[{...record,date:'bad'}]}));assert.throws(()=>validateBackup('{"app":"worth-a-moment","version":1,"reflections":[],"__proto__":{}}'));
+const original={...record,profileSummary:'Keep this original'};assert.deepEqual(mergeReflections([original],[record]),{records:[original],added:0,kept:1});assert.equal(mergeReflections([],[record]).added,1);assert.throws(()=>mergeReflections(Array.from({length:1000},(_,i)=>({...record,id:String(i)})),[record]));
+console.log('Backup checks passed: schema, limits, unsafe fields, duplicate IDs, original snapshots and non-overwriting merge.');
