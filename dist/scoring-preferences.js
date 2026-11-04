@@ -1,13 +1,13 @@
 /* Explicitly saved, browser-local priorities. Outcome ratings are never stored here. */
 (function(){
-const dKeys=['money','time','energy','now','later','connection','meaning','security','health','flexibility','other'];
-const iKeys=['income','time','energy','security','flexibility','meaning','connection','health','other','now','later'];
+const dKeys=['money','time','energy','now','later','connection','meaning','security','health','flexibility','other','outcome'];
+const iKeys=['income','time','energy','security','flexibility','meaning','connection','health','other','now','later','outcome'];
 const decisionIds=[...dKeys.map(k=>'decisionWeight_'+k),...['money','time','energy'].map(k=>'decisionSwing_'+k),'decisionMaxMoney','decisionMaxTime','decisionMaxEffort'];
 const incomeIds=[...iKeys.map(k=>'scoreWeight_'+k),...['income','time','energy'].map(k=>'scoreSwing_'+k),'scoreMaxTime','scoreMaxLoad','tradePreference'];
 const el=id=>document.getElementById(id);let profiles={};try{const data=JSON.parse(localStorage.getItem('worth-scoring-priorities-v1')||'null');if(data?.version===1&&data.profiles&&typeof data.profiles==='object')profiles=data.profiles}catch{}
 let type=el('decisionType').value;const draft={};
 function capture(ids){return Object.fromEntries(ids.map(id=>[id,el(id).value]));}
-function apply(ids,data){for(const id of ids){const node=el(id),v=data?.[id];if(typeof v!=='string')continue;const n=Number(v);if(v===''||(Number.isFinite(n)&&(!node.hasAttribute('min')||n>=Number(node.min))&&(!node.hasAttribute('max')||n<=Number(node.max))))node.value=v;}}
+function apply(ids,data){for(const id of ids){const node=el(id),v=data?.[id];if(!node||typeof v!=='string')continue;const n=Number(v);if(v===''||(Number.isFinite(n)&&(!node.hasAttribute('min')||n>=Number(node.min))&&(!node.hasAttribute('max')||n<=Number(node.max))))node.value=v;}}
 function status(id,text){el(id).textContent=text;}
 function clear(ids){for(const id of ids)el(id).value=id.includes('Weight_')?'0':'';}
 function controls(anchor,label,key,ids){const bar=document.createElement('div');bar.className='preference-controls';const save=document.createElement('button');save.type='button';save.className='quiet';save.textContent='Save these priorities';const reset=document.createElement('button');reset.type='button';reset.className='quiet';reset.textContent='Clear these priorities';const msg=document.createElement('p');msg.id=label+'PreferenceStatus';msg.className='helper';msg.setAttribute('role','status');msg.textContent='Save to remember importance, major-change amounts and hard limits on this device. Option ratings stay with the decision.';anchor.querySelector('summary').after(bar);bar.append(save,reset,msg);
@@ -16,6 +16,7 @@ reset.onclick=()=>{clear(ids);delete profiles[key()];if(label==='decision')delet
 controls(el('decisionScoreSettings'),'decision',()=>type,decisionIds);
 const incomeDetails=el('scoreWeight_income').closest('details');controls(incomeDetails,'income',()=>'income',incomeIds);
 apply(decisionIds,profiles[type]);apply(incomeIds,profiles.income);
+document.addEventListener('wam:preparation-controls-ready',()=>{apply(decisionIds,profiles[type]);apply(incomeIds,profiles.income);});
 let timer;function refresh(){clearTimeout(timer);timer=setTimeout(()=>{if(current&&el('form').checkValidity()){
 for(const id of ['task','alt','minutes','money','energy','capacity','gain','skip','repeat'])current[id]=el(id).value.trim();
 put('doTitle',current.task);put('altTitle',current.alt);put('doGain',current.gain);put('skipText',current.skip);
