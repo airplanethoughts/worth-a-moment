@@ -8,7 +8,7 @@ function scaleKey(p){if(!p||!['scaleDefinition','anchorLow','anchorMid','anchorH
 function horizonKey(slot,horizon){return slot==='now'?'now':typeof horizon==='string'&&horizon.trim()?'later:'+horizon.trim().toLowerCase():null;}
 function observations(items,asOf=Date.now()){
  const out=[],seen=new Set();
- for(const item of items){if(!item||typeof item.id!=='string'||item.simulated||seen.has(item.id))continue;seen.add(item.id);const scale=scaleKey(item.personalScale),decisionAt=Date.parse(item.date),outcome=item.feelingOutcomes;if(!scale||!Number.isFinite(decisionAt)||!['do','alt'].includes(outcome?.choice))continue;
+ for(const item of items){if(!item||typeof item.id!=='string'||item.simulated||seen.has(item.id))continue;seen.add(item.id);const scale=scaleKey(item.personalScale),decisionAt=Date.parse(item.date),outcome=item.feelingOutcomes;if(!scale||!Number.isFinite(decisionAt)||!['do','alt'].includes(outcome?.choice))continue;if(['do','alt'].includes(item.outcomeChoice)&&item.outcomeChoice!==outcome.choice)continue;
  const context=['everyday','purchase','relationship','income'].includes(item.decisionType)?item.decisionType:'everyday';
  for(const slot of ['now','later']){const actual=outcome[slot],observedAt=Date.parse(actual?.recordedAt),value=rating(actual?.value),forecast=rating(item.personalScale[(outcome.choice==='do'?'scoreDo':'scoreAlt')+(slot==='now'?'Now':'Later')]),horizon=horizonKey(slot,item.personalScale.horizon);
  if(value===null||forecast===null||actual?.timingConfirmed!==true||!Number.isFinite(observedAt)||observedAt<=decisionAt||observedAt>asOf||!horizon)continue;
