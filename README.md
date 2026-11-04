@@ -107,3 +107,14 @@ Time uses a ridge correction to `log(1 + forecast)` and transforms back with `ex
 The same six-prior-outcome/four-chronological-check/10-total-outcome gate is used. Resource MAE must improve by more than 1 minute, 0.1 weekly hours or 0.05 effort points, respectively. Model settings are product conventions. Unsupported forecasts and non-improving fits retain raw inputs. Both learned weekly time components revert to raw forecasts if their sum exceeds 168 hours. Original forecasts and score snapshots remain immutable; future scores use checked resource estimates and still enforce user hard limits. Costs used in scoring and their before/after values are shown. Resource learning has a separate off switch and survives decision backup/restore.
 
 Run `node test-resource-calibration.cjs` for chronology, units, cold start, no-gain and out-of-range fallbacks, nonnegative time, bounded effort, chosen-option consistency, hard-limit crossings and income effort-load recomputation.
+
+
+### Preparation and chance
+
+The Preparation & chance section compares lighter and more prepared plans across class/tasks, purchases, relationships and income. It uses user-entered probability ranges, personal outcome values and explicit time, spending and effort costs in the shared weighted preference score. It reports expected outcome values, a sensitivity range and break-even success odds. No universal hours-to-success curve or measured luck score is claimed. Limits and refusals override the preference score.
+
+Saved forecasts preserve the evidence, success definition and if–then plan. Chosen-plan outcomes and actual preparation minutes are included in decision backups. Matched histories show observed rates, a labeled Beta(1,1) estimate and Brier error; observational differences never automatically change probabilities or imply causation. Preparation records are excluded from the separate activity-resource calibration.
+
+Research: Gollwitzer & Sheeran (2006), DOI 10.1016/S0065-2601(06)38002-1; Macnamara et al. (2014), DOI 10.1177/0956797614535810; Scott Schmidler, Duke Stat 340 Lecture 9, Value of Information. Product arithmetic, prior and decision thresholds are identified separately from these findings.
+
+Run `node test-preparation.cjs` for expected-utility, probability-bound, cost, hard-limit, refusal, break-even and chosen-outcome evidence checks.
