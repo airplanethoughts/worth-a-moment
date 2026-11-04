@@ -8,7 +8,7 @@ function calculate(x){
  if(x.preference!==null&&x.preference!==undefined){if(!Number.isFinite(x.preference)||x.preference<=0||x.preference>168)throw Error('Your optional time limit must be greater than zero and no more than 168 hours.');const rate=Math.log(1.2)/x.preference;preference={margin:log-rate*extra,breakEven:x.incomeA*Math.exp(rate*extra)};}
  return {gain,percent:100*(x.incomeB/x.incomeA-1),index:100*log,timeA,timeB,extra,annualExtra:extra*x.weeks,loadA:x.hoursA*x.effortA/10,loadB:x.hoursB*x.effortB/10,perExtraHour:extra>0?gain/(extra*x.weeks):null,preference};
 }
-const factorNames={income:'Income',time:'Free time',energy:'Energy',security:'Financial security / benefits',flexibility:'Flexibility / control',meaning:'Meaning / growth',connection:'Relationships',health:'Health / sustainable stress',other:'Your additional factor'};
+const factorNames={income:'Income',time:'Free time',energy:'Energy',security:'Financial security / benefits',flexibility:'Flexibility / control',meaning:'Meaning / growth',connection:'Relationships',health:'Health / sustainable stress',other:'Your additional factor',now:'Feelings now',later:'Feelings later'};
 function scoreTradeoff(x,p){
  const r=calculate(x),parts=[];
  for(const [key,label] of Object.entries(factorNames)){
@@ -34,7 +34,8 @@ const out=el('tradeResult');try{const r=calculate(x);out.replaceChildren();const
 const profile={factors:{}};
 for(const key of Object.keys(factorNames)){const read=id=>{const v=el(id).value;return v.trim()===''?NaN:Number(v)};profile.factors[key]={weight:read('scoreWeight_'+key)};if(['income','time','energy'].includes(key))profile.factors[key].swing=read('scoreSwing_'+key);else Object.assign(profile.factors[key],{a:read('scoreA_'+key),b:read('scoreB_'+key)});}
 for(const [k,id] of [['maxTime','scoreMaxTime'],['maxLoad','scoreMaxLoad']])profile[k]=el(id).value===''?null:Number(el(id).value);
-try{const score=scoreTradeoff(x,profile);const heading=document.createElement('h3');heading.textContent=`${n(score.score)}/100 · ${score.verdict}`;out.append(heading);
+try{const original=scoreTradeoff(x,profile),rawProfile=JSON.parse(JSON.stringify(profile)),learning=root.WamDecisionLearning?.processIncome(profile);if(learning)Object.assign(profile,learning.input);const score=scoreTradeoff(x,profile);const heading=document.createElement('h3');heading.textContent=`${n(score.score)}/100 · ${score.verdict}`;out.append(heading);
+if(learning){line('Personal learning:',learning.summary);if(learning.snapshot.applied)line('Before / after learning:',`${n(original.score)}/100 → ${n(score.score)}/100. Only selected feeling ratings were adjusted.`);root.WamDecisionLearning.captureIncome({x,profile:rawProfile,result:score,learning:{...learning.snapshot,originalScore:original.score,adjustedScore:score.score}});}
 line('How to read it:', '50 means an even tradeoff; higher favors option B. This is a personal decision score, not predicted happiness or a probability.');
 if(score.limits.length)line('Option B hard limits:', 'Exceeds your '+score.limits.join(' and ')+'.');if(score.alternativeLimits.length)line('Current option hard limits:', 'Exceeds your '+score.alternativeLimits.join(' and ')+'.');if(score.limits.length||score.alternativeLimits.length)line('Hard limit override:', 'The preference score does not override your limits. Revise any option that exceeds them.');
 for(const f of score.parts)line(f.label+':',`${signed(f.points)} score points · importance ${f.weight}/5${f.capped?' · major-change cap reached':''}.`);
