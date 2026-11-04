@@ -1,7 +1,7 @@
 /* Explicitly saved, browser-local priorities. Outcome ratings are never stored here. */
 (function(){
 const dKeys=['money','time','energy','now','later','connection','meaning','security','health','flexibility','other'];
-const iKeys=['income','time','energy','security','flexibility','meaning','connection','health','other'];
+const iKeys=['income','time','energy','security','flexibility','meaning','connection','health','other','now','later'];
 const decisionIds=[...dKeys.map(k=>'decisionWeight_'+k),...['money','time','energy'].map(k=>'decisionSwing_'+k),'decisionMaxMoney','decisionMaxTime','decisionMaxEffort'];
 const incomeIds=[...iKeys.map(k=>'scoreWeight_'+k),...['income','time','energy'].map(k=>'scoreSwing_'+k),'scoreMaxTime','scoreMaxLoad','tradePreference'];
 const el=id=>document.getElementById(id);let profiles={};try{const data=JSON.parse(localStorage.getItem('worth-scoring-priorities-v1')||'null');if(data?.version===1&&data.profiles&&typeof data.profiles==='object')profiles=data.profiles}catch{}
@@ -35,7 +35,7 @@ el('tradeExample').addEventListener('click',()=>{const p=draft.income||profiles.
 el('reset').addEventListener('click',()=>{draft[type]=capture(decisionIds);},true);
 el('reset').addEventListener('click',()=>{const previous=type;type=el('decisionType').value;apply(decisionIds,type===previous?draft[previous]:draft[type]||profiles[type]);});
 // Income edits mark old results stale instead of leaving a recommendation that refers to old inputs.
-function invalidateIncome(){const out=el('tradeResult');if(out.childNodes.length){out.replaceChildren();const p=document.createElement('p');p.textContent='Inputs changed. Calculate again to update your score and verdict.';out.append(p);}}
+function invalidateIncome(){document.dispatchEvent(new Event('wam:income-invalidated'));const out=el('tradeResult');if(out.childNodes.length){out.replaceChildren();const p=document.createElement('p');p.textContent='Inputs changed. Calculate again to update your score and verdict.';out.append(p);}}
 el('tradeForm').addEventListener('input',invalidateIncome);
 el('tradeForm').addEventListener('change',invalidateIncome);
 })();
