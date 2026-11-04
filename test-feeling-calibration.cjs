@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict');const C=require('./dist/feeling-calibration.js');
+const {decisionScore}=require('./dist/decision-score.js');
+const scale={scaleDefinition:'Connected and calm',anchorLow:'Worst day',anchorMid:'Ordinary day',anchorHigh:'Deeply good day'};
+const day=86400000,start=Date.UTC(2026,0,1);const history=Array.from({length:24},(_,i)=>{const forecast=[3,5,7,9][i%4];return {id:'decision-'+i,date:new Date(start+i*day).toISOString(),decisionType:'everyday',personalScale:{...scale,scoreDoNow:forecast,scoreAltNow:2,horizon:'one month',scoreDoLater:forecast},feelingOutcomes:{choice:'do',now:{value:1+.6*forecast,recordedAt:new Date(start+i*day+1000).toISOString(),timingConfirmed:true}}};});
+const rows=C.observations(history),model=C.train(rows);assert.equal(rows.length,24);assert.equal(model.checked,18);assert.equal(model.ready,true);assert.ok(model.mae<model.originalMae);for(const check of model.checks){const row=rows.find(r=>r.id===check.id);assert.ok(check.trainingIds.every(id=>rows.find(r=>r.id===id).observedAt<row.decisionAt));}
+assert.equal(C.train(rows.slice(0,9)).ready,false);assert.equal(C.predict(model,0).applied,false);for(const f of [2,4,6,8,10]){const p=C.predict(model,f);assert.ok(p.value>=0&&p.value<=10);}
+const accurate=rows.map(r=>({...r,actual:r.forecast}));assert.equal(C.train(accurate).ready,false);
+const late=rows.map(r=>({...r,observedAt:start+100*day}));assert.equal(C.train(late,start+101*day).checked,0);
+assert.equal(C.observations([{...history[0],feelingOutcomes:{choice:'alt',now:history[0].feelingOutcomes.now}}])[0].forecast,2);
+assert.equal(C.observations([{...history[0],feelingOutcomes:{choice:'do',now:{value:9}}}]).length,0);
+assert.equal(C.observations([{...history[0],personalScale:{}}]).length,0);assert.equal(C.observations([{...history[0],simulated:true}]).length,0);assert.equal(C.observations([history[0],history[0]]).length,1);
+const query={scale:C.scaleKey(scale),context:'everyday',horizon:'now',forecast:8};assert.equal(C.calibrate(history,query).applied,true);for(const q of [{...query,context:'purchase'},{...query,horizon:'later:one month'},{...query,scale:'another scale'}])assert.equal(C.calibrate(history,q).applied,false);assert.equal(C.calibrate(history,{...query,enabled:false}).value,8);
+const main=C.calibrate(history,{...query,forecast:8}),alt=C.calibrate(history,{...query,forecast:4});const raw=decisionScore({factors:{now:{weight:5,a:8,b:4}}});const learned=decisionScore({factors:{now:{weight:5,a:main.value,b:alt.value}}});assert.notEqual(learned.score,raw.score);assert.equal(raw.score,70);assert.ok(learned.score<70&&learned.score>50);
+const limit=decisionScore({factors:{now:{weight:5,a:main.value,b:alt.value},money:{weight:0,a:20,b:0}},limits:{money:10}});assert.match(limit.verdict,/hard limit/);assert.match(decisionScore({factors:{now:{weight:5,a:main.value,b:alt.value}},declined:true}).verdict,/step back/);
+console.log('Feeling calibration passed: Bayesian/ridge correction, chronological validation, no future leakage, cold start, scale/context/horizon isolation, selected-choice labels, bounds, no-gain fallback and actual tradeoff-score changes.');
+
+for(const context of ['purchase','relationship','income']){const past=history.map(item=>({...item,decisionType:context}));assert.equal(C.calibrate(past,{...query,context}).applied,true,context);assert.equal(C.calibrate(past,query).applied,false);}
+for(const value of [true,false,[],{},'',null,undefined,11,-1])assert.equal(C.rating(value),null);
+const {scoreTradeoff}=require('./dist/income-tradeoff.js');const schedule={incomeA:60000,incomeB:75000,hoursA:40,hoursB:45,recoveryA:2,recoveryB:2,effortA:5,effortB:6,weeks:48};const rawIncome=scoreTradeoff(schedule,{factors:{now:{weight:5,a:4,b:8}}});const changedIncome=scoreTradeoff(schedule,{factors:{now:{weight:5,a:alt.value,b:main.value}}});assert.notEqual(rawIncome.score,changedIncome.score);
+const {validateBackup}=require('./dist/decision-backups.js');const backup=validateBackup({app:'worth-a-moment',version:1,reflections:history.map(item=>({...item,task:'Synthetic task',alt:'Synthetic alternative'}))});assert.deepEqual(backup[0].feelingOutcomes,history[0].feelingOutcomes);
+console.log('Income and all decision categories use the same learned-feelings path; backups preserve outcomes and unknown data stays excluded.');
