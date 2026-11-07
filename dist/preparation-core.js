@@ -11,10 +11,11 @@ function compare(x){
  for(const key of ['time','money','effort']){swings[key]=finite(x.swings?.[key],Number.MIN_VALUE,1e9,key+' major change');}
  for(const side of ['light','prepared']){const a=x[side];if(!a)throw Error('Enter both plans.');for(const k of ['low','p','high'])finite(a[k],0,1,'Probability');if(a.low>a.p||a.p>a.high)throw Error('Each probability needs low ≤ best estimate ≤ high.');for(const k of ['time','money','effort'])finite(a[k],0,k==='effort'?10:1e9,k+' cost');}
  const gap=(success-failure)/100,costParts=['time','money','effort'].filter(k=>weights[k]>0).map(k=>({key:k,label:k+' kept',weight:weights[k],delta:(x.light[k]-x.prepared[k])/swings[k]}));
- const scoreAt=(p,q)=>core.weightedTradeoff([{key:'outcome',label:'Expected outcome value',weight:weights.outcome,delta:(p-q)*gap},...costParts]);
+ const scoreAt=(p,q)=>core.weightedTradeoff([{key:'outcome',label:'Expected outcome value',weight:weights.outcome,delta:(p-q)*gap},...costParts],x.temporal);
  const result=scoreAt(x.prepared.p,x.light.p),low=scoreAt(x.prepared.low,x.light.high).score,high=scoreAt(x.prepared.high,x.light.low).score;
  const cost=costParts.reduce((s,f)=>s+f.weight*Math.max(-1,Math.min(1,f.delta)),0);
- const breakEven=x.light.p-cost/(weights.outcome*gap);
+ let breakEven=x.light.p-cost/(weights.outcome*gap);
+ if(x.temporal){if(scoreAt(1,x.light.p).score<50)breakEven=2;else if(scoreAt(0,x.light.p).score>=50)breakEven=-1;else{let lo=0,hi=1;for(let i=0;i<60;i++){const mid=(lo+hi)/2;if(scoreAt(mid,x.light.p).score>=50)hi=mid;else lo=mid;}breakEven=hi;}}
  const limits=[];for(const k of ['time','money','effort']){const v=x.limits?.[k];if(v===null||v===undefined)continue;finite(v,0,k==='effort'?10:1e9,k+' limit');for(const side of ['light','prepared'])if(x[side][k]>v)limits.push(side+' exceeds '+k+' limit');}
  return {...result,range:{low,high},breakEven,expected:{light:x.light.p*success+(1-x.light.p)*failure,prepared:x.prepared.p*success+(1-x.prepared.p)*failure},probabilityChange:x.prepared.p-x.light.p,limits,blocked:!!x.declined||limits.length>0,robust:low>50?'prepared':high<50?'light':'uncertain'};
 }
