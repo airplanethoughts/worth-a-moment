@@ -10,6 +10,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: node test-activity-suggestions.cjs
+      - run: node test-calendar-context.cjs
+      - run: node test-calendar-connection.cjs
+      - run: node test-gmail-connection.cjs
+      - run: node test-life-context.cjs
+      - run: node test-serendipity.cjs
       - run: node test-time-effects.cjs
       - run: node test-preparation-probability.cjs
       - run: node test-preparation.cjs
