@@ -146,3 +146,59 @@ Sources: Grinstead & Snell, Introduction to Probability (law of large numbers); 
 ### Metrics workspace
 
 The interface is organized into Compare, History, Learning and Evidence tabs. Compare has Everyday (including purchase/relationship decisions), Income and Preparation modes with a consistent score, resource metrics, factor-contribution bars and optional time-perspective row. Full calculations and sources are available on demand. Metric values use the existing structured calculation snapshots rather than parsing narrative text; blanks and insufficient evidence remain visibly unknown. Editing income/preparation inputs clears their displayed score. Hard-limit/refusal overrides remain prominent. Saved counts and outcome measurements are calculated from browser-local history. Existing data, engines, numerical thresholds, score snapshots, backup/restore and learning are preserved. Old section links route to the corresponding workspace pane. Responsive layout and keyboard tab navigation are supported.
+
+### Google Calendar connection
+
+WAM's **Connections** tab reads Google Calendar directly with Google Identity Services. It requests only `calendar.events.readonly` and `calendar.calendarlist.readonly`. It does not use the developer's ChatGPT app connections, and no Calendar token or event snapshot belongs in this repository.
+
+Owner setup (no client secret required):
+
+1. Select a Google Cloud project dedicated to WAM, enable **Google Calendar API**, and configure Google Auth Platform branding/audience.
+2. Create an OAuth **Web application** client. Add the exact WAM site origin (scheme and hostname, without a path) as an authorized JavaScript origin. Add `http://localhost:8095` for local testing if needed.
+3. For a testing app, add the accounts allowed to test. Google may require verification before broader distribution of sensitive scopes. Do not bypass Google's unverified-app restrictions.
+4. Put the public web client ID in `dist/integration-config.js` and run `node scripts/stamp-assets.cjs`. No client secret, OAuth token, or provider dataset should be saved there. The on-page setup field can use a client ID temporarily; it is not saved.
+5. In the deployed app click **Connect Google Calendar**, then complete Google's account chooser and consent yourself. Loading Google's library may require a second Connect click to preserve the browser's user-gesture popup rule.
+
+Tokens and fetched calendars/events are session memory only. Refresh reads the selected calendar for seven local days; recurring events are expanded, cancelled/declined events are excluded, overlapping busy time is unioned, and errors mark retained results as stale. Disconnect revokes the current token and clears the event view. Reload requires reconnecting.
+
+Selecting an event offers possible exact-title/explicitly-linked history matches. A user must confirm a matching context before reusing a saved comparison. Original expectations are copied; the existing chronological feeling/resource learning is then applied on calculation. Relationship refusal remains a boundary. A new invitation or a reused calendar event does not establish mutual interest.
+
+Calendar check-ins are retrospective observations, not pre-decision forecasts. They cannot qualify as original forecast/actual pairs in the calibration tests. The descriptive three-category worth-it estimate uses a Dirichlet(1,1,1) prior and appears after three reports. It is not a causal effect, dopamine measurement, or proven happiness prediction. Check-ins and selected-event provenance are included in the existing local decision backup. Unselected event feeds and tokens are never included.
+
+Run `node test-calendar-context.cjs` and `node test-calendar-connection.cjs` for pure model/auth lifecycle checks. Synthetic provider fixtures test UI behavior only; they do not prove hosted Google consent or live account access. Gmail and Slack are not implemented in this version.
+
+### One contextual suggestion stream
+
+The Connections tab also offers **What could I do?** after selected calendars refresh. It produces one blended set of alternatives, with a familiar activity and a new possibility when both are feasible. There are no user-facing suggestion modes. It never books activities or messages someone automatically.
+
+It checks free intervals, a 10-minute busy-event buffer, an effort comfort level, and a spending limit. Multiple selected calendars (up to five) are read together. Suggestions compete as alternatives and may occupy the same free interval. Missing commitments, travel, changed prices, and personal suitability still require review.
+
+The experimental ranking uses outcome history (45%), effort fit (20%), reviewed-source relevance (15%), observed weekday/time similarity (7%), observed month similarity (3%), and nearby event-keyword relevance (10%). Date/event/history context breaks ties reproducibly; it does not randomize utility scores. Month/time signals require timestamped activities, not merely the time a comparison was saved. Recurring appointments do not establish attendance or enjoyment. These weights, keyword categories, buffers and catalog estimates are product assumptions, not scientific constants or a validated happiness model.
+
+Only confirmed chosen activities are counted. Refusals and unknown historical costs are excluded. No response is not a dislike. Fresh means unseen in saved WAM history, not necessarily new in someone's life. The curated idea catalog does not know local venues, ticket availability, weather, medical suitability, or Gmail content. The main weighted comparison and checked calibrators still apply when the user chooses **Compare this idea**. Provenance distinguishes WAM suggestions from actual Google events.
+
+Research inspiration: contextual bandit exploration/exploitation (Microsoft Research, *Taming the Monster*), and the JITAI/EMA references in Evidence. This ranking is not an implementation of that trained contextual-bandit algorithm and has no corresponding regret or prediction guarantee. Run `node test-activity-suggestions.cjs` for feasibility, selected-choice evidence, timestamp, boundary, and exploration checks.
+
+### Gmail and real-source opportunities
+
+Gmail now has a separate, explicit **Connect Gmail (read-only)** action using `gmail.readonly`. Enable Gmail API in WAM's Google Cloud project. Google classifies this as a restricted scope; the app is for its approved Google Testing users until applicable verification is completed. No Gmail permission is inferred from Calendar consent. Connecting alone does not list mail: the visitor clicks Refresh, then selects messages to read.
+
+The browser lists at most 40 matching messages received within 14 days. Search does not override the received-date filter. It fetches full text only for up to ten selected current-list IDs; attachments are ignored. Account identity, bodies, snippets, reviewed possibilities and tokens are session memory, not repository or server data. No AI service receives email text. Disconnecting revokes the Google client grant, clearing both app connections since Google revocation can cover all scopes. Reload requires reconnecting.
+
+Selected emails become source-backed **possibilities to review**. Keyword labels identify possible invitations/events/deadlines/opportunities; selected messages can still be reviewed without a matching label. This is bounded local extraction, not an LLM that understands all correspondence. Explicit ISO timestamps appear as evidence; ambiguous dates, fixed versus flexible timing, duration, effort and cost require review. Cancellation/closed-registration wording blocks a source. Future calendar events can produce inferred preparation proposals (up to ten), with their real event start as the finish-by boundary. Calendar entries do not prove attendance or necessity of preparation.
+
+The single idea feed now uses reviewed real sources plus eligible familiar activities; it does **not** use the generic catalog as a fallback. Unknown cost is not zero and unknown timing is not flexible. Fixed starts, deadlines, busy-event buffers, effort and budget are checked before a source idea is suggested. Source updates invalidate displayed suggestions. Source references travel into explicitly saved comparisons, but bodies/excerpts are not included in backups. The existing pre-decision forecasts, confirmed outcomes and checked calibrators remain separate from these proposals. Nothing is automatically sent, registered, purchased or written to Calendar.
+
+Checks: `node test-gmail-connection.cjs`, `node test-life-context.cjs`, and the existing Calendar, suggestions, scoring and calibration checks. Synthetic source tests establish extraction/UI logic, not live Gmail permission or current availability of an invitation.
+
+### Single-response discovery and small-pattern hypotheses
+
+**Give me one recommendation** now returns one response, rather than separate modes or a three-idea menu. It compares feasible familiar activities, reviewed Gmail/Calendar possibilities, independently discovered public listings and small creative experiments in one pool. Unknown interests do not block unfamiliar activities. Personal context remains browser-local.
+
+Small-pattern clues are deliberately narrow: at least three structured calendar plans, at least three worth-it reports with actual short durations, or at least three valid confirmed effort overruns. Actual-report clues use recent decisions (90 days). They are described as hypotheses, never as a diagnosis, hidden desire, dopamine measurement or proof of preference. A bounded exploration bonus can help an unfamiliar, feasible option compete with known routines. It is an experimental product rule, not a calibrated confidence interval or validated happiness prediction.
+
+Public discovery uses the documented Come Alone / Meet & Mint JSON directory and per-city feeds, with attribution (CC BY 4.0). Loading is user-initiated; only a chosen city is requested, with no Google tokens, mail, private calendar entries, history or location sensor data. Coverage is incomplete, including absent cities. Feeds older than 48 hours, invalid/past events, mismatched cities and unsafe links are excluded. Only free-listed events are automatically considered. WAM recommends spending ten minutes investigating a listing, **not** committing to attend. Event time is shown in its supplied time zone, with source link and fetch timestamp; eligibility, price, travel, authenticity and current registration still require review.
+
+With no applicable listing or history, WAM can propose a clearly labelled, low-cost creative experiment. These are rule-based combinations, not invented local venues or claims of generative AI understanding. An available time window must be checked against a loaded calendar or explicitly confirmed by the user. A user can compare the recommendation through the existing model and later report how it went. Selected-source provenance and reasoning are retained only with an explicitly saved comparison.
+
+Run `node test-serendipity.cjs` alongside existing tests. Live public-feed checks verify transport/data format; synthetic behavioral tests verify selection logic. Neither establishes that a recommendation will be enjoyable or an event will still have space.

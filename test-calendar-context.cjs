@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict');const C=require('./dist/calendar-context-core.js');
+const raw=(id,start,end,more={})=>({id,summary:'Dinner with Jo',start:{dateTime:start},end:{dateTime:end},...more});
+const a=C.event(raw('a','2026-11-15T17:00:00-08:00','2026-11-15T18:00:00-08:00'));
+assert(a);assert.equal((a.end-a.start)/60000,60);assert.equal(C.event({...raw('a','2026-11-15T17:00:00-08:00','2026-11-15T18:00:00-08:00'),status:'cancelled'}),null);
+assert.equal(C.event(raw('d','2026-11-15T17:00:00-08:00','2026-11-15T18:00:00-08:00',{attendees:[{self:true,responseStatus:'declined'}]})),null);
+assert.equal(C.event(raw('z','2026-11-15T17:00:00','2026-11-15T18:00:00')),null);assert.equal(C.stamp({date:'2026-02-30'}),null);
+const b=C.event(raw('b','2026-11-15T17:30:00-08:00','2026-11-15T19:00:00-08:00'));
+assert.equal(C.busyMinutes([a,b],a.start,b.end),120);assert.equal(C.busyMinutes([{...a,busy:false},b],a.start,b.end),90);assert.equal(C.busyMinutes([a],a.start+1800000,a.end),30);
+const allDay=C.event({id:'ad',start:{date:'2026-11-15'},end:{date:'2026-11-16'}});assert(allDay.allDay);assert.equal(new Date(allDay.start).getHours(),0);
+const now=Date.parse('2026-11-17T00:00:00Z');const record=(id,key,worth='yes')=>({id,task:'Dinner with Jo',date:'2026-11-16T04:00:00Z',calendarSource:{key,end:a.end},calendarFeedback:{attended:true,worth,recordedAt:'2026-11-16T04:00:00Z'}});
+const rows=[record('1','one'),record('2','two','mixed'),record('3','three','no')];assert.equal(C.worthSummary(rows,now).probability,2/6);assert.equal(C.worthSummary([],now).probability,null);
+assert.equal(C.feedback([...rows,record('dupe','one')],now).length,3);
+assert.equal(C.feedback([{...record('future','f'),calendarSource:{key:'f',end:now+1}}],now).length,0);
+assert.equal(C.feedback([{...record('missing','m'),calendarFeedback:{attended:false,worth:'yes',recordedAt:new Date(now).toISOString()}}],now).length,0);
+assert.equal(C.feedback([{...record('early','m'),calendarFeedback:{attended:true,worth:'yes',recordedAt:'2025-01-01T00:00:00Z'}}],now).length,0);
+assert.equal(C.candidates(a,[...rows,{id:'different-person',task:'Dinner with Lee'},{id:'simulated',task:a.title,simulated:true}]).length,3);
+assert.equal(C.chooseSnapshot({outcomeChoice:'alt'}),null);
+console.log('Calendar context checks passed: time zones, unioned busy time, cancellation, declined invitations, conservative matching, missing/future outcomes, deduplication, smoothed counts.');
